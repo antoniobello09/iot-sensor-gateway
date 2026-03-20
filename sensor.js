@@ -24,7 +24,7 @@ setInterval(function () {
     });
 
     const options = {
-        hostname: '192.168.1.102',
+        hostname: '192.168.1.108',
         port: 3000,
         path: '/temperature',
         method: 'POST',
