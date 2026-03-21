@@ -1,10 +1,16 @@
 const sensorLib = require('node-dht-sensor');
-const http = require('node:http');
+const mqtt = require('mqtt');
 
-var sensorType = 11; // DHT11
-var sensorPin = 4;   // GPIO4
+var sensorType = 11;
+var sensorPin = 4;
 
-// Leggi e invia ogni 2 secondi
+const client = mqtt.connect('mqtt://broker.hivemq.com:1883');
+const topic = 'antoniobello/iot/sensor/data';
+
+client.on('connect', () => {
+    console.log('Connesso al broker MQTT');
+});
+
 setInterval(function () {
     const readout = sensorLib.read(sensorType, sensorPin);
 
@@ -13,39 +19,14 @@ setInterval(function () {
         return;
     }
 
-    console.log('Temperature:', readout.temperature.toFixed(1) + 'C');
-    console.log('Humidity:', readout.humidity.toFixed(1) + '%');
-
-    const postData = JSON.stringify({
+    const data = JSON.stringify({
         sensor: 'ID1',
         timestamp: Date.now(),
         temperature: readout.temperature.toFixed(1),
         humidity: readout.humidity.toFixed(1)
     });
 
-    const options = {
-        hostname: '192.168.1.108',
-        port: 3000,
-        path: '/temperature',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData),
-        },
-    };
-
-    const req = http.request(options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            console.log('BODY:', chunk);
-        });
-    });
-
-    req.on('error', (e) => {
-        console.log('Server non raggiungibile:', e.message);
-    });
-
-    req.write(postData);
-    req.end();
+    client.publish(topic, data, { qos: 1 });
+    console.log('Pubblicato:', data);
 
 }, 2000);
